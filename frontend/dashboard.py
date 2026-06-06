@@ -3,14 +3,71 @@ import pandas as pd
 import requests
 import matplotlib.pyplot as plt
 
-st.title("ForensiAI Dashboard")
+API_URL = "http://127.0.0.1:8000"
 
-df = pd.DataFrame()
+st.set_page_config(
+    page_title="ForensiAI Dashboard",
+    layout="wide"
+)
+
+st.title("🔍 ForensiAI Dashboard")
+
+# ===================================
+# Upload Section
+# ===================================
+
+st.subheader("Upload Image")
+
+uploaded_file = st.file_uploader(
+    "Choose Image",
+    type=["jpg", "jpeg", "png"]
+)
+
+if uploaded_file is not None:
+
+    st.image(
+        uploaded_file,
+        caption="Preview",
+        width=300
+    )
+
+    if st.button("Analyze Image"):
+
+        files = {
+            "file": (
+                uploaded_file.name,
+                uploaded_file.getvalue(),
+                uploaded_file.type
+            )
+        }
+
+        try:
+
+            response = requests.post(
+                f"{API_URL}/upload-image",
+                files=files
+            )
+
+            response.raise_for_status()
+
+            st.success("Analysis Completed")
+
+            st.json(response.json())
+
+            st.rerun()
+
+        except Exception as e:
+
+            st.error(f"Upload failed: {e}")
+
+# ===================================
+# Load History
+# ===================================
 
 try:
 
     response = requests.get(
-        "http://127.0.0.1:8000/history"
+        f"{API_URL}/history"
     )
 
     response.raise_for_status()
@@ -19,59 +76,159 @@ try:
 
     df = pd.DataFrame(data)
 
-    st.success("Backend Connected")
-
 except Exception as e:
 
-    st.error("Backend FastAPI belum berjalan")
+    st.error(f"Cannot load history: {e}")
 
-    st.code(str(e))
+    df = pd.DataFrame()
+
+# ===================================
+# Dashboard
+# ===================================
 
 if not df.empty:
 
-    col1, col2, col3, col4 = st.columns(4)
-
     total = len(df)
+
     low = len(df[df["risk"] == "LOW"])
     medium = len(df[df["risk"] == "MEDIUM"])
     high = len(df[df["risk"] == "HIGH"])
 
-    col1.metric("Total", total)
-    col2.metric("Low", low)
-    col3.metric("Medium", medium)
-    col4.metric("High", high)
+    avg_score = round(df["score"].mean(), 2)
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    col1.metric("Total Analysis", total)
+    col2.metric("Low Risk", low)
+    col3.metric("Medium Risk", medium)
+    col4.metric("Avg Score", avg_score)
+
+    st.divider()
+
+    # ===================================
+    # Filter
+    # ===================================
+
+    st.subheader("Filter")
+
+    risk_filter = st.selectbox(
+        "Risk Level",
+        ["ALL", "LOW", "MEDIUM", "HIGH"]
+    )
+
+    filtered_df = df.copy()
+
+    if risk_filter != "ALL":
+
+        filtered_df = filtered_df[
+            filtered_df["risk"] == risk_filter
+        ]
+
+    # ===================================
+    # History Table
+    # ===================================
 
     st.subheader("Analysis History")
 
-    st.dataframe(df)
+    st.dataframe(
+        filtered_df,
+        use_container_width=True
+    )
 
-    if "risk" in df.columns:
+    # ===================================
+    # Investigation Detail
+    # ===================================
+
+    st.subheader("Investigation Detail")
+
+    selected_file = st.selectbox(
+        "Select File",
+        filtered_df["filename"]
+    )
+
+    selected_row = filtered_df[
+        filtered_df["filename"] == selected_file
+    ].iloc[0]
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    c1.metric(
+        "Risk Score",
+        selected_row["score"]
+    )
+
+    c2.metric(
+        "Risk Level",
+        selected_row["risk"]
+    )
+
+    c3.metric(
+        "Mean ELA",
+        round(selected_row["mean_ela"], 2)
+    )
+
+    c4.metric(
+        "Std ELA",
+        round(selected_row["std_ela"], 2)
+    )
+
+    st.json(
+        selected_row.to_dict()
+    )
+
+    st.divider()
+
+    # ===================================
+    # Charts
+    # ===================================
+
+    col_chart1, col_chart2 = st.columns(2)
+
+    with col_chart1:
+
+        st.subheader("Risk Distribution")
 
         risk_counts = df["risk"].value_counts()
 
-        fig, ax = plt.subplots()
+        fig1, ax1 = plt.subplots()
 
-        ax.pie(
+        ax1.pie(
             risk_counts,
             labels=risk_counts.index,
             autopct="%1.1f%%"
         )
 
-        ax.set_title("Risk Distribution")
+        st.pyplot(fig1)
 
-        st.pyplot(fig)
-    
-    if not df.empty and "mean_ela" in df.columns and "std_ela" in df.columns:
+    with col_chart2:
 
-        st.subheader("ELA Analysis")
+        if (
+            "mean_ela" in df.columns
+            and "std_ela" in df.columns
+        ):
 
-        fig, ax = plt.subplots()
+            st.subheader("ELA Analysis")
 
-        ax.scatter(df["mean_ela"], df["std_ela"], c="blue", alpha=0.5)
+            fig2, ax2 = plt.subplots()
 
-        ax.set_xlabel("Mean ELA")
-        ax.set_ylabel("Std ELA")
-        ax.set_title("Mean vs Std of ELA")
+            ax2.scatter(
+                df["mean_ela"],
+                df["std_ela"],
+                alpha=0.7
+            )
 
-        st.pyplot(fig)
-        
+            ax2.set_xlabel("Mean ELA")
+
+            ax2.set_ylabel("Std ELA")
+
+            ax2.set_title(
+                "Mean vs Std ELA"
+            )
+
+            st.pyplot(fig2)
+
+else:
+
+    st.warning(
+        "No analysis data found."
+    )
