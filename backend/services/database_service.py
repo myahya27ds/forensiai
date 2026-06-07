@@ -6,7 +6,9 @@ def save_analysis(
     filename,
     metadata,
     analysis,
-    ela
+    ela,
+    image_path,
+    ela_path
 ):
 
     db = SessionLocal()
@@ -33,7 +35,11 @@ def save_analysis(
 
             mean_ela=ela["mean_error"],
 
-            std_ela=ela["std_error"]
+            std_ela=ela["std_error"],
+
+            image_path=image_path,
+
+            ela_path=ela_path
         )
 
         db.add(item)

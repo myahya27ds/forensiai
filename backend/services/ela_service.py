@@ -49,5 +49,6 @@ def generate_ela(image_path, output_path, quality=90):
         "ela_path": output_path,
         "mean_error": round(mean_error, 2),
         "max_error": round(max_error, 2),
-        "std_error": round(std_error, 2)
+        "std_error": round(std_error, 2),
+        "image_path": image_path
     }

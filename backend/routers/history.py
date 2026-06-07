@@ -28,7 +28,9 @@ def get_history():
                 "risk": item.risk,
                 "score": item.score,
                 "mean_ela": item.mean_ela,
-                "std_ela": item.std_ela
+                "std_ela": item.std_ela,
+                "image_path": item.image_path,
+                "ela_path": item.ela_path
             })
 
         return results

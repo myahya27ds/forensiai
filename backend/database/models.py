@@ -27,3 +27,7 @@ class ImageAnalysis(Base):
     mean_ela = Column(Float)
 
     std_ela = Column(Float)
+
+    image_path = Column(String)
+
+    ela_path = Column(String)

@@ -150,6 +150,35 @@ if not df.empty:
         filtered_df["filename"] == selected_file
     ].iloc[0]
 
+    st.write("Selected Row")
+    st.json(selected_row.to_dict())
+
+    st.subheader("Image Comparison")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        if pd.notna(selected_row["image_path"]):
+
+            st.image(
+                selected_row["image_path"],
+                caption="Original Image",
+                use_container_width=True
+            )
+
+        else:
+
+            st.warning("Original image not available")
+            
+    with col2:
+
+        st.image(
+            selected_row["ela_path"],
+            caption="ELA Image",
+            use_column_width=True
+        )
+
     c1, c2, c3, c4 = st.columns(4)
 
     c1.metric(

@@ -26,7 +26,7 @@ async def upload_image(file: UploadFile = File(...)):
     metadata = extract_metadata(file_path)
 
     # Hitung risiko
-    risk_result = calculate_risk(metadata)
+    analysis = calculate_risk(metadata)
     
     # Generate ELA image
     ela_output = (
@@ -40,15 +40,19 @@ async def upload_image(file: UploadFile = File(...)):
 )
     # Simpan hasil analisis ke database
     save_analysis(
-        file.filename,
-        metadata,
-        risk_result,
-        ela_result
-    )
+    file.filename,
+    metadata,
+    analysis,
+    ela_result,
+    image_path=str(file_path),
+    ela_path=ela_result["ela_path"]
+)
     
     return {
-        "filename": file.filename,
-        "metadata": metadata,
-        "analysis": risk_result,
-        "ela": ela_result
-    }
+    "filename": file.filename,
+    "metadata": metadata,
+    "analysis": analysis,
+    "ela": ela_result,
+    "image_path": str(file_path),
+    "ela_path": ela_result["ela_path"]
+}
