@@ -16,43 +16,69 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 @router.post("/upload-image")
 async def upload_image(file: UploadFile = File(...)):
 
-    # Simpan file upload
+    # =====================
+    # Save Upload
+    # =====================
+
     file_path = UPLOAD_DIR / file.filename
 
     with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        shutil.copyfileobj(
+            file.file,
+            buffer
+        )
 
-    # Ambil metadata
-    metadata = extract_metadata(file_path)
+    # =====================
+    # Metadata
+    # =====================
 
-    # Hitung risiko
-    analysis = calculate_risk(metadata)
-    
-    # Generate ELA image
+    metadata = extract_metadata(
+        str(file_path)
+    )
+
+    # =====================
+    # ELA Analysis
+    # =====================
+
     ela_output = (
         UPLOAD_DIR /
         f"ela_{file.filename}"
     )
 
     ela_result = generate_ela(
-    str(file_path),
-    str(ela_output)
-)
-    # Simpan hasil analisis ke database
+        str(file_path),
+        str(ela_output)
+    )
+
+    # =====================
+    # Risk Analysis
+    # =====================
+
+    analysis = calculate_risk(
+        metadata,
+        ela_result
+    )
+
+    # =====================
+    # Save Database
+    # =====================
+
     save_analysis(
-    file.filename,
-    metadata,
-    analysis,
-    ela_result,
-    image_path=str(file_path),
-    ela_path=ela_result["ela_path"]
-)
-    
+        file.filename,
+        metadata,
+        analysis,
+        ela_result
+    )
+
+    # =====================
+    # Response
+    # =====================
+
     return {
-    "filename": file.filename,
-    "metadata": metadata,
-    "analysis": analysis,
-    "ela": ela_result,
-    "image_path": str(file_path),
-    "ela_path": ela_result["ela_path"]
-}
+        "filename": file.filename,
+        "metadata": metadata,
+        "analysis": analysis,
+        "ela": ela_result,
+        "image_path": str(file_path),
+        "ela_path": ela_result["ela_path"]
+    }

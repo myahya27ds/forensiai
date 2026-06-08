@@ -1,14 +1,11 @@
 from backend.database.db import SessionLocal
 from backend.database.models import ImageAnalysis
 
-
 def save_analysis(
     filename,
     metadata,
     analysis,
-    ela,
-    image_path,
-    ela_path
+    ela
 ):
 
     db = SessionLocal()
@@ -37,9 +34,9 @@ def save_analysis(
 
             std_ela=ela["std_error"],
 
-            image_path=image_path,
+            image_path=ela["image_path"],
 
-            ela_path=ela_path
+            ela_path=ela["ela_path"]
         )
 
         db.add(item)
@@ -47,4 +44,5 @@ def save_analysis(
         db.commit()
 
     finally:
+
         db.close()
