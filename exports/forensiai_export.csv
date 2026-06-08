@@ -1,0 +1,4 @@
+id,filename,camera,software,risk,score,mean_ela,std_ela,image_path,ela_path
+1,"ChatGPT Image 2 Mei 2026, 17.21.58.png",Unknown,Unknown,MEDIUM,70,4.75,8.24,"uploads\ChatGPT Image 2 Mei 2026, 17.21.58.png","uploads\ela_ChatGPT Image 2 Mei 2026, 17.21.58.png"
+2,4x6.jpg,Canon EOS 6D,Adobe Photoshop 22.1 (Windows),MEDIUM,75,4.5,9.51,uploads\4x6.jpg,uploads\ela_4x6.jpg
+3,1334085.jpeg,Unknown,Unknown,MEDIUM,70,0.14,2.31,uploads\1334085.jpeg,uploads\ela_1334085.jpeg

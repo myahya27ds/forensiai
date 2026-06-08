@@ -12,9 +12,9 @@ st.set_page_config(
 
 st.title("🔍 ForensiAI Dashboard")
 
-# =====================================
-# Upload Section
-# =====================================
+# ==================================
+# UPLOAD IMAGE
+# ==================================
 
 st.subheader("Upload Image")
 
@@ -23,7 +23,7 @@ uploaded_file = st.file_uploader(
     type=["jpg", "jpeg", "png"]
 )
 
-if uploaded_file:
+if uploaded_file is not None:
 
     st.image(
         uploaded_file,
@@ -66,9 +66,80 @@ if uploaded_file:
                 f"Upload failed: {e}"
             )
 
-# =====================================
-# Load Data
-# =====================================
+st.divider()
+
+# ==================================
+# LOAD STATS
+# ==================================
+
+try:
+
+    stats_response = requests.get(
+        f"{API_URL}/stats"
+    )
+
+    stats_response.raise_for_status()
+
+    stats = stats_response.json()
+
+except Exception as e:
+
+    st.error(
+        f"Cannot load stats: {e}"
+    )
+
+    stats = {
+        "total": 0,
+        "low": 0,
+        "medium": 0,
+        "high": 0,
+        "avg_score": 0
+    }
+
+# ==================================
+# DASHBOARD METRICS
+# ==================================
+
+col1, col2, col3, col4 = st.columns(4)
+
+col1.metric(
+    "Total Analysis",
+    stats["total"]
+)
+
+col2.metric(
+    "Low Risk",
+    stats["low"]
+)
+
+col3.metric(
+    "Medium Risk",
+    stats["medium"]
+)
+
+col4.metric(
+    "Avg Score",
+    stats["avg_score"]
+)
+
+st.divider()
+
+# ==================================
+# EXPORT CSV
+# ==================================
+
+st.subheader("Export Data")
+
+st.link_button(
+    "⬇ Download CSV",
+    f"{API_URL}/export"
+)
+
+st.divider()
+
+# ==================================
+# LOAD HISTORY
+# ==================================
 
 try:
 
@@ -78,9 +149,9 @@ try:
 
     response.raise_for_status()
 
-    df = pd.DataFrame(
-        response.json()
-    )
+    data = response.json()
+
+    df = pd.DataFrame(data)
 
 except Exception as e:
 
@@ -90,261 +161,171 @@ except Exception as e:
 
     df = pd.DataFrame()
 
-# =====================================
-# Dashboard
-# =====================================
+# ==================================
+# HISTORY TABLE
+# ==================================
 
 if not df.empty:
 
-    df = df.sort_values(
-        by="id",
-        ascending=False
+    st.subheader("Analysis History")
+
+    risk_filter = st.selectbox(
+        "Filter Risk",
+        ["ALL", "LOW", "MEDIUM", "HIGH"]
     )
-
-    total = len(df)
-
-    low = len(
-        df[df["risk"] == "LOW"]
-    )
-
-    medium = len(
-        df[df["risk"] == "MEDIUM"]
-    )
-
-    high = len(
-        df[df["risk"] == "HIGH"]
-    )
-
-    avg_score = round(
-        df["score"].mean(),
-        2
-    )
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    col1.metric(
-        "Total Analysis",
-        total
-    )
-
-    col2.metric(
-        "Low Risk",
-        low
-    )
-
-    col3.metric(
-        "Medium Risk",
-        medium
-    )
-
-    col4.metric(
-        "Average Score",
-        avg_score
-    )
-
-    st.divider()
-
-    # =====================================
-    # Filters
-    # =====================================
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        risk_filter = st.selectbox(
-            "Risk Filter",
-            [
-                "ALL",
-                "LOW",
-                "MEDIUM",
-                "HIGH"
-            ]
-        )
-
-    with col2:
-
-        search_text = st.text_input(
-            "Search Filename"
-        )
 
     filtered_df = df.copy()
 
     if risk_filter != "ALL":
 
         filtered_df = filtered_df[
-            filtered_df["risk"]
-            == risk_filter
+            filtered_df["risk"] == risk_filter
         ]
-
-    if search_text:
-
-        filtered_df = filtered_df[
-            filtered_df["filename"]
-            .str.contains(
-                search_text,
-                case=False,
-                na=False
-            )
-        ]
-
-    # =====================================
-    # History
-    # =====================================
-
-    st.subheader(
-        "Analysis History"
-    )
 
     st.dataframe(
         filtered_df,
         use_container_width=True
     )
 
-    # =====================================
-    # Investigation Detail
-    # =====================================
+    st.divider()
 
-    if not filtered_df.empty:
+    # ==================================
+    # DETAIL INVESTIGATION
+    # ==================================
 
-        st.subheader(
-            "Investigation Detail"
-        )
+    st.subheader(
+        "Investigation Detail"
+    )
 
-        selected_file = st.selectbox(
-            "Select File",
-            filtered_df["filename"]
-        )
+    selected_file = st.selectbox(
+        "Select File",
+        filtered_df["filename"]
+    )
 
-        selected_row = filtered_df[
-            filtered_df["filename"]
-            == selected_file
-        ].iloc[0]
+    selected_row = filtered_df[
+        filtered_df["filename"]
+        == selected_file
+    ].iloc[0]
 
-        col_a, col_b = st.columns(2)
+    # ==========================
+    # PDF REPORT
+    # ==========================
 
-        with col_a:
+    st.link_button(
+        "📄 Download PDF Report",
+        f"{API_URL}/report/{selected_row['id']}"
+    )
 
-            st.info(
-                f"Selected ID: {selected_row['id']}"
+    st.divider()
+
+    # ==========================
+    # DELETE BUTTON
+    # ==========================
+
+    if st.button(
+        "🗑 Delete Analysis"
+    ):
+
+        try:
+
+            delete_response = requests.delete(
+                f"{API_URL}/analysis/{selected_row['id']}"
             )
 
-        with col_b:
+            delete_response.raise_for_status()
 
-            if st.button(
-                "🗑 Delete Analysis"
-            ):
+            st.success(
+                "Analysis deleted"
+            )
 
-                try:
+            st.rerun()
 
-                    response = requests.delete(
-                        f"{API_URL}/analysis/{selected_row['id']}"
-                    )
+        except Exception as e:
 
-                    response.raise_for_status()
+            st.error(
+                f"Delete failed: {e}"
+            )
 
-                    st.success(
-                        "Analysis deleted"
-                    )
+    st.divider()
 
-                    st.rerun()
+    # ==================================
+    # IMAGE COMPARISON
+    # ==================================
 
-                except Exception as e:
-
-                    st.error(
-                        f"Delete failed: {e}"
-                    )
-        report_url = (
-            f"{API_URL}/report/"
-            f"{selected_row['id']}"
-        )
-
-        st.link_button(
-            "📄 Download PDF Report",
-            report_url
-        )
-
-        st.divider()
+    if (
+        "image_path" in selected_row
+        and "ela_path" in selected_row
+    ):
 
         st.subheader(
             "Image Comparison"
         )
 
-        col1, col2 = st.columns(2)
+        col_left, col_right = st.columns(2)
 
-        with col1:
+        with col_left:
 
-            if (
-                "image_path"
-                in selected_row
-            ):
-
-                st.image(
-                    selected_row[
-                        "image_path"
-                    ],
-                    caption="Original Image",
-                    use_container_width=True
-                )
-
-        with col2:
-
-            if (
-                "ela_path"
-                in selected_row
-            ):
-
-                st.image(
-                    selected_row[
-                        "ela_path"
-                    ],
-                    caption="ELA Result",
-                    use_container_width=True
-                )
-
-        st.divider()
-
-        c1, c2, c3, c4 = st.columns(4)
-
-        c1.metric(
-            "Risk Score",
-            selected_row["score"]
-        )
-
-        c2.metric(
-            "Risk Level",
-            selected_row["risk"]
-        )
-
-        c3.metric(
-            "Mean ELA",
-            round(
-                selected_row["mean_ela"],
-                2
+            st.image(
+                selected_row["image_path"],
+                caption="Original Image",
+                use_container_width=True
             )
-        )
 
-        c4.metric(
-            "Std ELA",
-            round(
-                selected_row["std_ela"],
-                2
+        with col_right:
+
+            st.image(
+                selected_row["ela_path"],
+                caption="ELA Result",
+                use_container_width=True
             )
-        )
-
-        st.json(
-            selected_row.to_dict()
-        )
 
     st.divider()
 
-    # =====================================
-    # Charts
-    # =====================================
+    # ==================================
+    # DETAIL METRICS
+    # ==================================
 
-    col_chart1, col_chart2 = st.columns(2)
+    c1, c2, c3, c4 = st.columns(4)
 
-    with col_chart1:
+    c1.metric(
+        "Risk Score",
+        selected_row["score"]
+    )
+
+    c2.metric(
+        "Risk Level",
+        selected_row["risk"]
+    )
+
+    c3.metric(
+        "Mean ELA",
+        round(
+            selected_row["mean_ela"],
+            2
+        )
+    )
+
+    c4.metric(
+        "Std ELA",
+        round(
+            selected_row["std_ela"],
+            2
+        )
+    )
+
+    st.json(
+        selected_row.to_dict()
+    )
+
+    st.divider()
+
+    # ==================================
+    # CHARTS
+    # ==================================
+
+    chart1, chart2 = st.columns(2)
+
+    with chart1:
 
         st.subheader(
             "Risk Distribution"
@@ -365,33 +346,38 @@ if not df.empty:
 
         st.pyplot(fig1)
 
-    with col_chart2:
+    with chart2:
 
-        st.subheader(
-            "ELA Analysis"
-        )
+        if (
+            "mean_ela" in df.columns
+            and "std_ela" in df.columns
+        ):
 
-        fig2, ax2 = plt.subplots()
+            st.subheader(
+                "ELA Analysis"
+            )
 
-        ax2.scatter(
-            df["mean_ela"],
-            df["std_ela"],
-            alpha=0.7
-        )
+            fig2, ax2 = plt.subplots()
 
-        ax2.set_xlabel(
-            "Mean ELA"
-        )
+            ax2.scatter(
+                df["mean_ela"],
+                df["std_ela"],
+                alpha=0.7
+            )
 
-        ax2.set_ylabel(
-            "Std ELA"
-        )
+            ax2.set_xlabel(
+                "Mean ELA"
+            )
 
-        ax2.set_title(
-            "Mean vs Std ELA"
-        )
+            ax2.set_ylabel(
+                "Std ELA"
+            )
 
-        st.pyplot(fig2)
+            ax2.set_title(
+                "Mean vs Std ELA"
+            )
+
+            st.pyplot(fig2)
 
 else:
 
