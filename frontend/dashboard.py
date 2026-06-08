@@ -221,6 +221,39 @@ if not df.empty:
             == selected_file
         ].iloc[0]
 
+        col_a, col_b = st.columns(2)
+
+        with col_a:
+
+            st.info(
+                f"Selected ID: {selected_row['id']}"
+            )
+
+        with col_b:
+
+            if st.button(
+                "🗑 Delete Analysis"
+            ):
+
+                try:
+
+                    response = requests.delete(
+                        f"{API_URL}/analysis/{selected_row['id']}"
+                    )
+
+                    response.raise_for_status()
+
+                    st.success(
+                        "Analysis deleted"
+                    )
+
+                    st.rerun()
+
+                except Exception as e:
+
+                    st.error(
+                        f"Delete failed: {e}"
+                    )
         report_url = (
             f"{API_URL}/report/"
             f"{selected_row['id']}"
