@@ -8,6 +8,9 @@ from backend.services.ela_service import generate_ela
 from backend.services.database_service import save_analysis
 from backend.services.heatmap_service import generate_heatmap
 from backend.services.overlay_service import generate_overlay
+from backend.services.image_service import (
+    normalize_orientation
+)
 
 router = APIRouter()
 
@@ -30,8 +33,12 @@ async def upload_image(file: UploadFile = File(...)):
         )
 
     # =====================
-    # Metadata
+    # Fix Orientation & Extract Metadata
     # =====================
+
+    normalize_orientation(
+        str(file_path)
+    )
 
     metadata = extract_metadata(
         str(file_path)

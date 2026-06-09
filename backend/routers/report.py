@@ -18,20 +18,56 @@ import os
 router = APIRouter()
 
 
-@router.get("/report/{item_id}")
-def generate_report(item_id: int):
+def add_image(content, image_path, title, styles):
+
+    if (
+        image_path
+        and os.path.exists(image_path)
+    ):
+
+        content.append(
+            Paragraph(
+                title,
+                styles["Heading2"]
+            )
+        )
+
+        img = Image(
+            os.path.abspath(image_path)
+        )
+
+        max_width = 350
+
+        img.drawWidth = max_width
+
+        img.drawHeight = (
+            img.imageHeight
+            * (max_width / img.imageWidth)
+        )
+
+        content.append(img)
+
+        content.append(
+            Spacer(1, 10)
+        )
+
+
+@router.get("/report/{report_id}")
+def generate_report(report_id: int):
 
     db = SessionLocal()
 
     try:
 
-        item = (
+        report = (
             db.query(ImageAnalysis)
-            .filter(ImageAnalysis.id == item_id)
+            .filter(
+                ImageAnalysis.id == report_id
+            )
             .first()
         )
 
-        if not item:
+        if not report:
 
             return {
                 "error": "Data not found"
@@ -43,14 +79,20 @@ def generate_report(item_id: int):
         )
 
         pdf_path = os.path.abspath(
-            f"reports/report_{item_id}.pdf"
+            f"reports/report_{report_id}.pdf"
         )
 
-        doc = SimpleDocTemplate(pdf_path)
+        doc = SimpleDocTemplate(
+            pdf_path
+        )
 
         styles = getSampleStyleSheet()
 
         content = []
+
+        # =====================
+        # TITLE
+        # =====================
 
         content.append(
             Paragraph(
@@ -63,16 +105,57 @@ def generate_report(item_id: int):
             Spacer(1, 20)
         )
 
+        # =====================
+        # SUMMARY
+        # =====================
+
+        content.append(
+            Paragraph(
+                "Investigation Summary",
+                styles["Heading2"]
+            )
+        )
+
+        content.append(
+            Paragraph(
+                f"""
+                Risk Level: <b>{report.risk}</b><br/>
+                Authenticity Score:
+                <b>{round(report.confidence * 100, 2)}%</b><br/>
+                Mean ELA:
+                <b>{report.mean_ela}</b><br/>
+                Standard Deviation ELA:
+                <b>{report.std_ela}</b><br/>
+                """,
+                styles["Normal"]
+            )
+        )
+
+        content.append(
+            Spacer(1, 15)
+        )
+
+        # =====================
+        # DETAIL INFORMATION
+        # =====================
+
         fields = [
-            ("Filename", item.filename),
-            ("Camera", item.camera),
-            ("Software", item.software),
-            ("Risk", item.risk),
-            ("Score", item.score),
-            ("Confidence", getattr(item, "confidence", "N/A")),
-            ("Mean ELA", item.mean_ela),
-            ("Std ELA", item.std_ela),
+            ("Filename", report.filename),
+            ("Camera", report.camera),
+            ("Software", report.software),
+            ("Risk", report.risk),
+            ("Score", report.score),
+            ("Confidence", report.confidence),
+            ("Mean ELA", report.mean_ela),
+            ("Std ELA", report.std_ela),
         ]
+
+        content.append(
+            Paragraph(
+                "Analysis Details",
+                styles["Heading2"]
+            )
+        )
 
         for label, value in fields:
 
@@ -87,131 +170,87 @@ def generate_report(item_id: int):
             Spacer(1, 20)
         )
 
+        # =====================
         # ORIGINAL IMAGE
+        # =====================
 
-        if (
-            item.image_path
-            and os.path.exists(
-                item.image_path
-            )
-        ):
+        add_image(
+            content,
+            report.image_path,
+            "Original Image",
+            styles
+        )
 
-            content.append(
-                Paragraph(
-                    "Original Image",
-                    styles["Heading2"]
-                )
-            )
-
-            content.append(
-                Image(
-                    os.path.abspath(
-                        item.image_path
-                    ),
-                    width=250,
-                    height=180
-                )
-            )
-
-            content.append(
-                Spacer(1, 10)
-            )
-
+        # =====================
         # ELA IMAGE
+        # =====================
 
-        if (
-            item.ela_path
-            and os.path.exists(
-                item.ela_path
-            )
-        ):
+        add_image(
+            content,
+            report.ela_path,
+            "ELA Analysis",
+            styles
+        )
 
-            content.append(
-                Paragraph(
-                    "ELA Result",
-                    styles["Heading2"]
-                )
+        # =====================
+        # HEATMAP IMAGE
+        # =====================
+
+        if hasattr(report, "heatmap_path"):
+
+            add_image(
+                content,
+                report.heatmap_path,
+                "Forgery Heatmap",
+                styles
             )
 
-            content.append(
-                Image(
-                    os.path.abspath(
-                        item.ela_path
-                    ),
-                    width=250,
-                    height=180
-                )
+        # =====================
+        # OVERLAY IMAGE
+        # =====================
+
+        if hasattr(report, "overlay_path"):
+
+            add_image(
+                content,
+                report.overlay_path,
+                "Overlay Visualization",
+                styles
             )
+
+        # =====================
+        # FOOTER
+        # =====================
+
+        content.append(
+            Spacer(1, 20)
+        )
+
+        content.append(
+            Paragraph(
+                "Generated by ForensiAI v0.8.2",
+                styles["Italic"]
+            )
+        )
+
+        # =====================
+        # BUILD PDF
+        # =====================
 
         doc.build(content)
 
         return FileResponse(
             pdf_path,
             media_type="application/pdf",
-            filename=f"report_{item_id}.pdf"
+            filename=f"report_{report_id}.pdf"
         )
-
-        # HEATMAP
-
-        if (
-            hasattr(item, "heatmap_path")
-            and item.heatmap_path
-            and os.path.exists(item.heatmap_path)
-        ):
-
-            content.append(
-                Paragraph(
-                    "Heatmap Analysis",
-                    styles["Heading2"]
-                )
-            )
-
-            content.append(
-                Image(
-                    os.path.abspath(
-                        item.heatmap_path
-                    ),
-                    width=250,
-                    height=180
-                )
-            )
-
-            content.append(
-                Spacer(1, 10)
-            )
-        
-        # OVERLAY
-
-        if (
-            hasattr(item, "overlay_path")
-            and item.overlay_path
-            and os.path.exists(item.overlay_path)
-        ):
-
-            content.append(
-                Paragraph(
-                    "Overlay Analysis",
-                    styles["Heading2"]
-                )
-            )
-
-            content.append(
-                Image(
-                    os.path.abspath(
-                        item.overlay_path
-                    ),
-                    width=250,
-                    height=180
-                )
-            )
-
-            content.append(
-                Spacer(1, 10)
-            )
 
     except Exception as e:
 
-        print("REPORT ERROR:", str(e))
+        print(
+            "REPORT ERROR:",
+            str(e)
+        )
 
         return {
             "error": str(e)

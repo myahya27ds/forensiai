@@ -34,7 +34,10 @@ def save_analysis(
 
             score=analysis["score"],
 
-            confidence=analysis["confidence"],
+            confidence=analysis.get(
+                "confidence",
+                None
+            ),
 
             mean_ela=ela["mean_error"],
 

@@ -100,7 +100,7 @@ except Exception as e:
 # DASHBOARD METRICS
 # ==================================
 
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3, col4, col5 = st.columns(5)
 
 col1.metric(
     "Total Analysis",
@@ -118,8 +118,13 @@ col3.metric(
 )
 
 col4.metric(
+    "High Risk",
+    stats["high"]
+)
+
+col5.metric(
     "Avg Score",
-    stats["avg_score"]
+    round(stats["avg_score"], 2)
 )
 
 st.divider()
@@ -182,8 +187,22 @@ if not df.empty:
             filtered_df["risk"] == risk_filter
         ]
 
+    display_df = filtered_df[
+        [
+            "id",
+            "filename",
+            "camera",
+            "software",
+            "score",
+            "risk",
+            "confidence",
+            "mean_ela",
+            "std_ela"
+        ]
+    ]
+
     st.dataframe(
-        filtered_df,
+        display_df,
         use_container_width=True
     )
 
@@ -253,17 +272,17 @@ if not df.empty:
     # ==================================
 
     if (
-        "image_path" in selected_row
-        and "ela_path" in selected_row
+        pd.notnull(selected_row["image_path"])
+        and pd.notnull(selected_row["ela_path"])
     ):
 
         st.subheader(
             "Image Comparison"
         )
 
-        col_left, col_right = st.columns(2)
+        col1, col2 = st.columns(2)
 
-        with col_left:
+        with col1:
 
             st.image(
                 selected_row["image_path"],
@@ -271,7 +290,15 @@ if not df.empty:
                 use_container_width=True
             )
 
-        with col_right:
+            if pd.notnull(selected_row["heatmap_path"]):
+
+                st.image(
+                    selected_row["heatmap_path"],
+                    caption="Forgery Heatmap",
+                    use_container_width=True
+                )
+
+        with col2:
 
             st.image(
                 selected_row["ela_path"],
@@ -279,13 +306,21 @@ if not df.empty:
                 use_container_width=True
             )
 
+            if pd.notnull(selected_row["overlay_path"]):
+
+                st.image(
+                    selected_row["overlay_path"],
+                    caption="Overlay Visualization",
+                    use_container_width=True
+                )
+
     st.divider()
 
     # ==================================
     # DETAIL METRICS
     # ==================================
 
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3, c4, c5 = st.columns(5)
 
     c1.metric(
         "Risk Score",
@@ -298,33 +333,27 @@ if not df.empty:
     )
 
     c3.metric(
-        "Mean ELA",
-        round(
-            selected_row["mean_ela"],
-            2
-        )
+        "Authenticity Confidence",
+        f"{round(selected_row['confidence']*100)}%"
     )
 
     c4.metric(
+        "Mean ELA",
+        round(selected_row["mean_ela"], 2)
+    )
+
+    c5.metric(
         "Std ELA",
-        round(
-            selected_row["std_ela"],
-            2
-        )
+        round(selected_row["std_ela"], 2)
     )
-
-    st.json(
-        selected_row.to_dict()
-    )
-
-    st.divider()
 
     # ==================================
     # CHARTS
     # ==================================
 
-    chart1, chart2 = st.columns(2)
+    chart1, chart2, chart3 = st.columns(3)
 
+    # PIE CHART FOR RISK DISTRIBUTION
     with chart1:
 
         st.subheader(
@@ -345,9 +374,35 @@ if not df.empty:
         )
 
         st.pyplot(fig1)
-
+    
+    # HISTOGRAM FOR RISK SCORES
     with chart2:
 
+        st.subheader(
+        "Risk Score Distribution"
+        )
+
+        fig2, ax2 = plt.subplots()
+
+        if len(df) > 0:
+
+            ax2.hist(
+                df["score"],
+                bins=10
+            )
+
+            ax2.set_xlabel(
+                "Risk Score"
+            )
+
+            ax2.set_ylabel(
+                "Frequency"
+            )
+
+        st.pyplot(fig2)
+
+    # SCATTER PLOT FOR ELA ANALYSIS
+    with chart3:
         if (
             "mean_ela" in df.columns
             and "std_ela" in df.columns
@@ -357,27 +412,27 @@ if not df.empty:
                 "ELA Analysis"
             )
 
-            fig2, ax2 = plt.subplots()
+            fig3, ax3 = plt.subplots()
 
-            ax2.scatter(
+            ax3.scatter(
                 df["mean_ela"],
                 df["std_ela"],
                 alpha=0.7
             )
 
-            ax2.set_xlabel(
+            ax3.set_xlabel(
                 "Mean ELA"
             )
 
-            ax2.set_ylabel(
+            ax3.set_ylabel(
                 "Std ELA"
             )
 
-            ax2.set_title(
+            ax3.set_title(
                 "Mean vs Std ELA"
             )
 
-            st.pyplot(fig2)
+            st.pyplot(fig3)
 
 else:
 

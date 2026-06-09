@@ -72,6 +72,7 @@ def calculate_risk(
     # =====================
     # Risk Level
     # =====================
+    
     if score >= 70:
 
         risk = "HIGH"
