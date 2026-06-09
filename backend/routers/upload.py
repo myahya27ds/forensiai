@@ -6,6 +6,7 @@ from backend.services.metadata_service import extract_metadata
 from backend.services.risk_service import calculate_risk
 from backend.services.ela_service import generate_ela
 from backend.services.database_service import save_analysis
+from backend.services.heatmap_service import generate_heatmap
 
 router = APIRouter()
 
@@ -51,6 +52,20 @@ async def upload_image(file: UploadFile = File(...)):
     )
 
     # =====================
+    # Heatmap Generation
+    # =====================
+
+    heatmap_output = (
+        UPLOAD_DIR /
+        f"heatmap_{file.filename}"
+    )
+
+    heatmap_path = generate_heatmap(
+        str(ela_output),
+        str(heatmap_output)
+    )
+
+    # =====================
     # Risk Analysis
     # =====================
 
@@ -80,5 +95,6 @@ async def upload_image(file: UploadFile = File(...)):
         "analysis": analysis,
         "ela": ela_result,
         "image_path": str(file_path),
-        "ela_path": ela_result["ela_path"]
-    }
+        "ela_path": ela_result["ela_path"],
+        "heatmap_path": heatmap_path
+    }       
