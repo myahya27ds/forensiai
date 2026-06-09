@@ -7,6 +7,7 @@ from backend.services.risk_service import calculate_risk
 from backend.services.ela_service import generate_ela
 from backend.services.database_service import save_analysis
 from backend.services.heatmap_service import generate_heatmap
+from backend.services.overlay_service import generate_overlay
 
 router = APIRouter()
 
@@ -66,6 +67,21 @@ async def upload_image(file: UploadFile = File(...)):
     )
 
     # =====================
+    # Overlay Generation
+    # =====================
+
+    overlay_output = (
+        UPLOAD_DIR /
+        f"overlay_{file.filename}"
+    )
+
+    overlay_path = generate_overlay(
+        str(file_path),
+        str(heatmap_output),
+        str(overlay_output)
+    )
+
+    # =====================
     # Risk Analysis
     # =====================
 
@@ -96,5 +112,6 @@ async def upload_image(file: UploadFile = File(...)):
         "ela": ela_result,
         "image_path": str(file_path),
         "ela_path": ela_result["ela_path"],
-        "heatmap_path": heatmap_path
+        "heatmap_path": heatmap_path,
+        "overlay_path": overlay_path
     }       
