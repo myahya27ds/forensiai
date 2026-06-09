@@ -4,13 +4,16 @@ AI-powered digital image forensic analysis platform built with FastAPI, Streamli
 
 ## Features
 
-* Image Upload
-* Metadata Extraction
-* Error Level Analysis (ELA)
-* Risk Scoring Engine
-* Investigation Dashboard
-* PDF Investigation Report
-* SQLite History Storage
+- Image Upload
+- EXIF Metadata Extraction
+- Error Level Analysis (ELA)
+- Risk Scoring
+- Investigation Dashboard
+- Analysis History
+- Delete Analysis
+- Statistics API
+- CSV Export
+- PDF Investigation Report
 
 ---
 
@@ -28,13 +31,13 @@ AI-powered digital image forensic analysis platform built with FastAPI, Streamli
 
 ## Tech Stack
 
-* Python
-* FastAPI
-* Streamlit
-* SQLAlchemy
-* SQLite
-* Pillow
-* ReportLab
+- FastAPI
+- Streamlit
+- SQLite
+- SQLAlchemy
+- ReportLab
+- Pandas
+- Pillow
 
 ---
 

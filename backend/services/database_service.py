@@ -30,6 +30,8 @@ def save_analysis(
 
             score=analysis["score"],
 
+            confidence=analysis["confidence"],
+
             mean_ela=ela["mean_error"],
 
             std_ela=ela["std_error"],

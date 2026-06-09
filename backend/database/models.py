@@ -24,6 +24,8 @@ class ImageAnalysis(Base):
 
     score = Column(Integer)
 
+    confidence = Column(Float)
+
     mean_ela = Column(Float)
 
     std_ela = Column(Float)
