@@ -4,8 +4,11 @@ def calculate_risk(
 ):
 
     score = 0
-
     findings = []
+
+    # =====================
+    # Risk Calculation
+    # =====================
 
     # =====================
     # Metadata
@@ -31,7 +34,7 @@ def calculate_risk(
         )
 
     # =====================
-    # ELA Mean
+    # ELA Analysis
     # =====================
 
     mean_ela = ela_result["mean_error"]
@@ -49,9 +52,9 @@ def calculate_risk(
         score += 10
 
     # =====================
-    # ELA Std
+    # ELA Variance
     # =====================
-
+    
     std_ela = ela_result["std_error"]
 
     if std_ela > 40:
@@ -69,7 +72,6 @@ def calculate_risk(
     # =====================
     # Risk Level
     # =====================
-
     if score >= 70:
 
         risk = "HIGH"
@@ -82,8 +84,13 @@ def calculate_risk(
 
         risk = "LOW"
 
-    confidence = round(
-        min(score / 100, 0.99),
+    manipulation_probability = round(
+        score / 100,
+        2
+    )
+
+    authenticity_score = round(
+        1 - manipulation_probability,
         2
     )
 
@@ -93,7 +100,13 @@ def calculate_risk(
 
         "risk": risk,
 
-        "confidence": confidence,
+        "confidence": authenticity_score,
+
+        "manipulation_probability":
+            manipulation_probability,
+
+        "authenticity_score":
+            authenticity_score,
 
         "findings": findings
     }

@@ -33,3 +33,7 @@ class ImageAnalysis(Base):
     image_path = Column(String)
 
     ela_path = Column(String)
+
+    heatmap_path = Column(String)
+
+    overlay_path = Column(String)

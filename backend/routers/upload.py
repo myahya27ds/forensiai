@@ -14,7 +14,6 @@ router = APIRouter()
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-
 @router.post("/upload-image")
 async def upload_image(file: UploadFile = File(...)):
 
@@ -98,7 +97,11 @@ async def upload_image(file: UploadFile = File(...)):
         file.filename,
         metadata,
         analysis,
-        ela_result
+        ela_result,
+        str(file_path),
+        ela_result["ela_path"],
+        heatmap_path,
+        overlay_path
     )
 
     # =====================

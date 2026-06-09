@@ -69,6 +69,7 @@ def generate_report(item_id: int):
             ("Software", item.software),
             ("Risk", item.risk),
             ("Score", item.score),
+            ("Confidence", getattr(item, "confidence", "N/A")),
             ("Mean ELA", item.mean_ela),
             ("Std ELA", item.std_ela),
         ]
@@ -149,6 +150,64 @@ def generate_report(item_id: int):
             media_type="application/pdf",
             filename=f"report_{item_id}.pdf"
         )
+
+        # HEATMAP
+
+        if (
+            hasattr(item, "heatmap_path")
+            and item.heatmap_path
+            and os.path.exists(item.heatmap_path)
+        ):
+
+            content.append(
+                Paragraph(
+                    "Heatmap Analysis",
+                    styles["Heading2"]
+                )
+            )
+
+            content.append(
+                Image(
+                    os.path.abspath(
+                        item.heatmap_path
+                    ),
+                    width=250,
+                    height=180
+                )
+            )
+
+            content.append(
+                Spacer(1, 10)
+            )
+        
+        # OVERLAY
+
+        if (
+            hasattr(item, "overlay_path")
+            and item.overlay_path
+            and os.path.exists(item.overlay_path)
+        ):
+
+            content.append(
+                Paragraph(
+                    "Overlay Analysis",
+                    styles["Heading2"]
+                )
+            )
+
+            content.append(
+                Image(
+                    os.path.abspath(
+                        item.overlay_path
+                    ),
+                    width=250,
+                    height=180
+                )
+            )
+
+            content.append(
+                Spacer(1, 10)
+            )
 
     except Exception as e:
 

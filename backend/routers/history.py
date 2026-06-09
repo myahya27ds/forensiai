@@ -13,27 +13,29 @@ def get_history():
 
     try:
 
-        data = db.query(
+        items = db.query(
             ImageAnalysis
         ).all()
 
-        results = []
-
-        for item in data:
-
-            results.append({
+        return [
+            {
                 "id": item.id,
                 "filename": item.filename,
                 "camera": item.camera,
+                "software": item.software,
                 "risk": item.risk,
                 "score": item.score,
+                "confidence": item.confidence,
                 "mean_ela": item.mean_ela,
                 "std_ela": item.std_ela,
                 "image_path": item.image_path,
-                "ela_path": item.ela_path
-            })
-
-        return results
+                "ela_path": item.ela_path,
+                "heatmap_path": item.heatmap_path,
+                "overlay_path": item.overlay_path
+            }
+            for item in items
+        ]
 
     finally:
+
         db.close()
