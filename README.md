@@ -80,7 +80,7 @@ forensiai/
 
 ## Current Version
 
-v0.6.1
+v0.9.0
 
 ## Author
 

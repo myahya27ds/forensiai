@@ -14,7 +14,7 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="ForensiAI",
-    version="0.6.0"
+    version="0.9.0"
 )
 
 app.include_router(upload_router)

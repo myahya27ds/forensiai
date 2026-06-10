@@ -6,6 +6,7 @@ def save_analysis(
     metadata,
     analysis,
     ela,
+    noise,
     image_path,
     ela_path,
     heatmap_path,
@@ -42,6 +43,16 @@ def save_analysis(
             mean_ela=ela["mean_error"],
 
             std_ela=ela["std_error"],
+
+            noise_level=noise["noise_level"],
+
+            mean_noise=noise["mean_noise"],
+
+            std_noise=noise["std_noise"],
+
+            manipulation_probability=analysis.get("manipulation_probability", None),
+
+            authenticity_score=analysis.get("authenticity_score", None),
 
             image_path=image_path,
 

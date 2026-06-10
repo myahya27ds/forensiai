@@ -1,14 +1,11 @@
 def calculate_risk(
     metadata,
-    ela_result
+    ela_result,
+    noise_result
 ):
 
     score = 0
     findings = []
-
-    # =====================
-    # Risk Calculation
-    # =====================
 
     # =====================
     # Metadata
@@ -24,7 +21,8 @@ def calculate_risk(
 
     if (
         metadata
-        and "Software" in metadata
+        and metadata.get("Software")
+        and metadata["Software"] != "Unknown"
     ):
 
         score += 25
@@ -34,7 +32,7 @@ def calculate_risk(
         )
 
     # =====================
-    # ELA Analysis
+    # ELA Mean
     # =====================
 
     mean_ela = ela_result["mean_error"]
@@ -54,7 +52,7 @@ def calculate_risk(
     # =====================
     # ELA Variance
     # =====================
-    
+
     std_ela = ela_result["std_error"]
 
     if std_ela > 40:
@@ -70,9 +68,45 @@ def calculate_risk(
         score += 10
 
     # =====================
+    # Noise Analysis
+    # =====================
+
+    mean_noise = noise_result["mean_noise"]
+
+    if mean_noise > 20:
+
+        score += 15
+
+        findings.append(
+            "Abnormal image noise detected"
+        )
+
+    elif mean_noise > 10:
+
+        score += 5
+
+    if noise_result["noise_level"] == "HIGH":
+
+        score += 20
+
+        findings.append(
+            "Abnormal noise pattern detected"
+        )
+
+    elif noise_result["noise_level"] == "MEDIUM":
+
+        score += 10
+
+    # =====================
+    # Prevent Overflow
+    # =====================
+
+    score = min(score, 100)
+
+    # =====================
     # Risk Level
     # =====================
-    
+
     if score >= 70:
 
         risk = "HIGH"
@@ -84,6 +118,10 @@ def calculate_risk(
     else:
 
         risk = "LOW"
+
+    # =====================
+    # Probability
+    # =====================
 
     manipulation_probability = round(
         score / 100,
@@ -101,7 +139,13 @@ def calculate_risk(
 
         "risk": risk,
 
-        "confidence": authenticity_score,
+        "confidence": round(
+            max(
+                manipulation_probability,
+                authenticity_score
+            ),
+            2
+        ),
 
         "manipulation_probability":
             manipulation_probability,

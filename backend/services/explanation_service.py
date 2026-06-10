@@ -1,65 +1,72 @@
 def generate_explanation(
     metadata,
+    analysis,
     ela_result,
-    analysis
+    noise_result
 ):
 
-    explanations = []
+    explanation = []
 
-    if not metadata:
+    # =====================
+    # Metadata
+    # =====================
 
-        explanations.append(
-            "Metadata unavailable."
+    if metadata:
+
+        explanation.append(
+            "Metadata berhasil ditemukan."
         )
 
-    if metadata.get("Software"):
+        if "Software" in metadata:
 
-        explanations.append(
-            f"Software detected: {metadata['Software']}"
-        )
-
-    if ela_result["mean_error"] > 25:
-
-        explanations.append(
-            "High ELA anomaly detected."
-        )
-
-    elif ela_result["mean_error"] > 10:
-
-        explanations.append(
-            "Moderate ELA anomaly detected."
-        )
-
-    if ela_result["std_error"] > 40:
-
-        explanations.append(
-            "High variance anomaly detected."
-        )
-
-    risk = analysis["risk"]
-
-    if risk == "HIGH":
-
-        conclusion = (
-            "Image shows strong indicators "
-            "of manipulation."
-        )
-
-    elif risk == "MEDIUM":
-
-        conclusion = (
-            "Image may contain edited regions."
-        )
+            explanation.append(
+                f"Gambar pernah diproses menggunakan software {metadata['Software']}."
+            )
 
     else:
 
-        conclusion = (
-            "Image appears authentic."
+        explanation.append(
+            "Metadata tidak ditemukan pada gambar."
         )
 
-    return {
+    # =====================
+    # ELA
+    # =====================
 
-        "explanations": explanations,
+    explanation.append(
+        f"Nilai ELA rata-rata sebesar {ela_result['mean_error']}."
+    )
 
-        "conclusion": conclusion
-    }
+    explanation.append(
+        f"Variasi ELA sebesar {ela_result['std_error']}."
+    )
+
+    # =====================
+    # Noise
+    # =====================
+
+    explanation.append(
+        f"Tingkat noise terdeteksi {noise_result['noise_level']}."
+    )
+
+    # =====================
+    # Risk
+    # =====================
+
+    explanation.append(
+        f"Tingkat risiko manipulasi dikategorikan {analysis['risk']}."
+    )
+
+    explanation.append(
+        f"Skor risiko mencapai {analysis['score']} dari 100."
+    )
+
+    explanation.append(
+        f"Probabilitas manipulasi diperkirakan {analysis['manipulation_probability'] * 100:.0f}%."
+    )
+
+    explanation.append(
+        f"Skor keaslian diperkirakan {analysis['authenticity_score'] * 100:.0f}%."
+    )
+
+    return " ".join(explanation)

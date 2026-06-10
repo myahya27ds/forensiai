@@ -37,3 +37,13 @@ class ImageAnalysis(Base):
     heatmap_path = Column(String)
 
     overlay_path = Column(String)
+
+    manipulation_probability = Column(Float)
+
+    authenticity_score = Column(Float)
+
+    mean_noise = Column(Float)
+
+    noise_level = Column(String)
+
+    std_noise = Column(Float)
