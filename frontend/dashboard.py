@@ -187,18 +187,23 @@ if not df.empty:
             filtered_df["risk"] == risk_filter
         ]
 
-    display_df = filtered_df[
-        [
+    columns_to_show = [
+        col for col in [
             "id",
             "filename",
-            "camera",
-            "software",
-            "score",
             "risk",
-            "confidence",
+            "score",
+            "authenticity_score",
+            "manipulation_probability",
             "mean_ela",
-            "std_ela"
+            "mean_noise",
+            "noise_level"
         ]
+        if col in filtered_df.columns
+    ]
+
+    display_df = filtered_df[
+        columns_to_show
     ]
 
     st.dataframe(
@@ -226,9 +231,56 @@ if not df.empty:
         == selected_file
     ].iloc[0]
 
-    # ==========================
+    # ==================================
+    # AI SUMMARY
+    # ==================================
+
+    st.subheader(
+        "AI Investigation Summary"
+    )
+
+    if (
+        selected_row.get("image_path")
+        and selected_row.get("ela_path")
+    ):
+
+        st.info(
+            selected_row["explanation"]
+        )
+    
+    if (
+        "findings" in filtered_df.columns
+        and selected_row.get("findings")
+    ):
+
+        st.subheader(
+            "Investigation Findings"
+        )
+
+        st.code(
+            selected_row["findings"]
+        )
+
+    # ==================================
+    # FINDINGS
+    # ================================== 
+
+    if (
+        "findings" in filtered_df.columns
+        and selected_row.get("findings")
+    ):
+
+        st.subheader(
+            "Investigation Findings"
+        )
+
+        st.code(
+            selected_row["findings"]
+        )
+
+    # ==================================
     # PDF REPORT
-    # ==========================
+    # ==================================
 
     st.link_button(
         "📄 Download PDF Report",
@@ -237,9 +289,9 @@ if not df.empty:
 
     st.divider()
 
-    # ==========================
+    # ==================================
     # DELETE BUTTON
-    # ==========================
+    # ==================================
 
     if st.button(
         "🗑 Delete Analysis"
@@ -272,8 +324,8 @@ if not df.empty:
     # ==================================
 
     if (
-        pd.notnull(selected_row["image_path"])
-        and pd.notnull(selected_row["ela_path"])
+        selected_row.get("image_path")
+        and selected_row.get("ela_path")
     ):
 
         st.subheader(
@@ -290,7 +342,7 @@ if not df.empty:
                 use_container_width=True
             )
 
-            if pd.notnull(selected_row["heatmap_path"]):
+            if selected_row.get("heatmap_path"):
 
                 st.image(
                     selected_row["heatmap_path"],
@@ -306,7 +358,7 @@ if not df.empty:
                 use_container_width=True
             )
 
-            if pd.notnull(selected_row["overlay_path"]):
+            if selected_row.get("overlay_path"):
 
                 st.image(
                     selected_row["overlay_path"],
@@ -320,7 +372,21 @@ if not df.empty:
     # DETAIL METRICS
     # ==================================
 
-    c1, c2, c3, c4, c5 = st.columns(5)
+    auth_score = (
+        selected_row.get(
+            "authenticity_score",
+            0
+        ) or 0
+    )
+
+    manip_score = (
+        selected_row.get(
+            "manipulation_probability",
+            0
+        ) or 0
+    )
+
+    c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
 
     c1.metric(
         "Risk Score",
@@ -333,19 +399,43 @@ if not df.empty:
     )
 
     c3.metric(
-        "Authenticity Confidence",
-        f"{round(selected_row['confidence']*100)}%"
+        "Authenticity",
+        f"{round(auth_score * 100)}%"
     )
 
     c4.metric(
-        "Mean ELA",
-        round(selected_row["mean_ela"], 2)
+        "Manipulation",
+        f"{round(manip_score * 100)}%"
     )
 
     c5.metric(
-        "Std ELA",
-        round(selected_row["std_ela"], 2)
+        "Mean ELA",
+        round(
+            selected_row["mean_ela"],
+            2
+        )
     )
+
+    c6.metric(
+        "Noise Level",
+        selected_row.get(
+            "noise_level",
+            "-"
+        )
+    )
+
+    c7.metric(
+        "Mean Noise",
+        round(
+            selected_row.get(
+                "mean_noise",
+                0
+            ),
+            2
+        )
+    )
+
+    st.divider()
 
     # ==================================
     # CHARTS
@@ -353,7 +443,6 @@ if not df.empty:
 
     chart1, chart2, chart3 = st.columns(3)
 
-    # PIE CHART FOR RISK DISTRIBUTION
     with chart1:
 
         st.subheader(
@@ -365,26 +454,27 @@ if not df.empty:
             .value_counts()
         )
 
-        fig1, ax1 = plt.subplots()
+        if len(risk_counts) > 0:
 
-        ax1.pie(
-            risk_counts,
-            labels=risk_counts.index,
-            autopct="%1.1f%%"
-        )
+            fig1, ax1 = plt.subplots()
 
-        st.pyplot(fig1)
-    
-    # HISTOGRAM FOR RISK SCORES
+            ax1.pie(
+                risk_counts,
+                labels=risk_counts.index,
+                autopct="%1.1f%%"
+            )
+
+            st.pyplot(fig1)
+
     with chart2:
 
         st.subheader(
-        "Risk Score Distribution"
+            "Risk Score Distribution"
         )
 
-        fig2, ax2 = plt.subplots()
-
         if len(df) > 0:
+
+            fig2, ax2 = plt.subplots()
 
             ax2.hist(
                 df["score"],
@@ -399,13 +489,14 @@ if not df.empty:
                 "Frequency"
             )
 
-        st.pyplot(fig2)
+            st.pyplot(fig2)
 
-    # SCATTER PLOT FOR ELA ANALYSIS
     with chart3:
+
         if (
             "mean_ela" in df.columns
             and "std_ela" in df.columns
+            and len(df) > 0
         ):
 
             st.subheader(
@@ -433,6 +524,60 @@ if not df.empty:
             )
 
             st.pyplot(fig3)
+
+    st.divider()
+
+    st.subheader(
+        "Noise Analysis"
+    )
+
+    n1, n2 = st.columns(2)
+
+    with n1:
+
+        if (
+            "mean_noise" in df.columns
+            and len(df) > 0
+        ):
+
+            fig4, ax4 = plt.subplots()
+
+            ax4.hist(
+                df["mean_noise"],
+                bins=10
+            )
+
+            ax4.set_xlabel(
+                "Mean Noise"
+            )
+
+            ax4.set_ylabel(
+                "Frequency"
+            )
+
+            st.pyplot(fig4)
+
+    with n2:
+
+        if (
+            "noise_level" in df.columns
+            and len(df) > 0
+        ):
+
+            counts = (
+                df["noise_level"]
+                .value_counts()
+            )
+
+            fig5, ax5 = plt.subplots()
+
+            ax5.pie(
+                counts,
+                labels=counts.index,
+                autopct="%1.1f%%"
+            )
+
+            st.pyplot(fig5)
 
 else:
 

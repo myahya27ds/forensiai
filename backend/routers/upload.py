@@ -134,7 +134,8 @@ async def upload_image(file: UploadFile = File(...)):
         str(file_path),
         ela_result["ela_path"],
         heatmap_path,
-        overlay_path
+        overlay_path,
+        explanation
     )
 
     # =====================

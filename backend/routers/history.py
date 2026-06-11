@@ -13,28 +13,65 @@ def get_history():
 
     try:
 
-        items = db.query(
-            ImageAnalysis
-        ).all()
+        rows = (
+            db.query(ImageAnalysis)
+            .order_by(
+                ImageAnalysis.id.desc()
+            )
+            .all()
+        )
 
-        return [
-            {
+        results = []
+
+        for item in rows:
+
+            results.append({
+
                 "id": item.id,
+
                 "filename": item.filename,
+
                 "camera": item.camera,
+
                 "software": item.software,
+
                 "risk": item.risk,
+
                 "score": item.score,
+
                 "confidence": item.confidence,
+
+                "manipulation_probability":
+                    item.manipulation_probability,
+
+                "authenticity_score":
+                    item.authenticity_score,
+
                 "mean_ela": item.mean_ela,
+
                 "std_ela": item.std_ela,
+
+                "mean_noise": item.mean_noise,
+
+                "std_noise": item.std_noise,
+
+                "noise_level": item.noise_level,
+
                 "image_path": item.image_path,
+
                 "ela_path": item.ela_path,
+
                 "heatmap_path": item.heatmap_path,
-                "overlay_path": item.overlay_path
-            }
-            for item in items
-        ]
+
+                "overlay_path": item.overlay_path,
+
+                "explanation": item.explanation,
+
+                "findings": item.findings
+
+            })
+
+        return results
 
     finally:
 

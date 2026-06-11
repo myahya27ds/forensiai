@@ -17,26 +17,86 @@ def export_csv():
 
     try:
 
-        data = (
+        rows = (
             db.query(ImageAnalysis)
+            .order_by(
+                ImageAnalysis.id.desc()
+            )
             .all()
         )
 
         results = []
 
-        for item in data:
+        for item in rows:
 
             results.append({
+
+                # =====================
+                # Basic Information
+                # =====================
+
                 "id": item.id,
+
                 "filename": item.filename,
+
                 "camera": item.camera,
+
                 "software": item.software,
+
+                # =====================
+                # Risk Analysis
+                # =====================
+
                 "risk": item.risk,
+
                 "score": item.score,
+
+                "confidence": item.confidence,
+
+                "manipulation_probability":
+                    item.manipulation_probability,
+
+                "authenticity_score":
+                    item.authenticity_score,
+
+                # =====================
+                # ELA Analysis
+                # =====================
+
                 "mean_ela": item.mean_ela,
+
                 "std_ela": item.std_ela,
+
+                # =====================
+                # Noise Analysis
+                # =====================
+
+                "mean_noise": item.mean_noise,
+
+                "std_noise": item.std_noise,
+
+                "noise_level": item.noise_level,
+
+                # =====================
+                # AI Investigation
+                # =====================
+
+                "explanation": item.explanation,
+
+                "findings": item.findings,
+
+                # =====================
+                # Image Paths
+                # =====================
+
                 "image_path": item.image_path,
-                "ela_path": item.ela_path
+
+                "ela_path": item.ela_path,
+
+                "heatmap_path": item.heatmap_path,
+
+                "overlay_path": item.overlay_path
+
             })
 
         os.makedirs(
@@ -52,7 +112,8 @@ def export_csv():
 
         df.to_csv(
             csv_path,
-            index=False
+            index=False,
+            encoding="utf-8-sig"
         )
 
         return FileResponse(

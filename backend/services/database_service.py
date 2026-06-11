@@ -1,6 +1,9 @@
 from backend.database.db import SessionLocal
 from backend.database.models import ImageAnalysis
 
+import json
+
+
 def save_analysis(
     filename,
     metadata,
@@ -10,7 +13,8 @@ def save_analysis(
     image_path,
     ela_path,
     heatmap_path,
-    overlay_path
+    overlay_path,
+    explanation=None
 ):
 
     db = SessionLocal()
@@ -18,6 +22,10 @@ def save_analysis(
     try:
 
         item = ImageAnalysis(
+
+            # =====================
+            # Basic Info
+            # =====================
 
             filename=filename,
 
@@ -31,6 +39,10 @@ def save_analysis(
                 "Unknown"
             ),
 
+            # =====================
+            # Risk Analysis
+            # =====================
+
             risk=analysis["risk"],
 
             score=analysis["score"],
@@ -40,19 +52,59 @@ def save_analysis(
                 None
             ),
 
+            manipulation_probability=analysis.get(
+                "manipulation_probability",
+                None
+            ),
+
+            authenticity_score=analysis.get(
+                "authenticity_score",
+                None
+            ),
+
+            # =====================
+            # ELA Analysis
+            # =====================
+
             mean_ela=ela["mean_error"],
 
             std_ela=ela["std_error"],
 
-            noise_level=noise["noise_level"],
+            # =====================
+            # Noise Analysis
+            # =====================
 
-            mean_noise=noise["mean_noise"],
+            mean_noise=noise.get(
+                "mean_noise",
+                None
+            ),
 
-            std_noise=noise["std_noise"],
+            std_noise=noise.get(
+                "std_noise",
+                None
+            ),
 
-            manipulation_probability=analysis.get("manipulation_probability", None),
+            noise_level=noise.get(
+                "noise_level",
+                None
+            ),
 
-            authenticity_score=analysis.get("authenticity_score", None),
+            # =====================
+            # AI Explanation
+            # =====================
+
+            explanation=explanation,
+
+            findings=json.dumps(
+                analysis.get(
+                    "findings",
+                    []
+                )
+            ),
+
+            # =====================
+            # Image Paths
+            # =====================
 
             image_path=image_path,
 
@@ -66,6 +118,21 @@ def save_analysis(
         db.add(item)
 
         db.commit()
+
+        db.refresh(item)
+
+        return item.id
+
+    except Exception as e:
+
+        db.rollback()
+
+        print(
+            "DATABASE ERROR:",
+            str(e)
+        )
+
+        raise e
 
     finally:
 
