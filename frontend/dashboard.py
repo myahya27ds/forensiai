@@ -247,19 +247,6 @@ if not df.empty:
         st.info(
             selected_row["explanation"]
         )
-    
-    if (
-        "findings" in filtered_df.columns
-        and selected_row.get("findings")
-    ):
-
-        st.subheader(
-            "Investigation Findings"
-        )
-
-        st.code(
-            selected_row["findings"]
-        )
 
     # ==================================
     # FINDINGS
