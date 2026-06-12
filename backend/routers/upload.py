@@ -11,6 +11,8 @@ from backend.services.overlay_service import generate_overlay
 from backend.services.image_service import normalize_orientation
 from backend.services.noise_service import analyze_noise
 from backend.services.explanation_service import generate_explanation
+from backend.services.copymove_service import detect_copymove
+from backend.services.clone_localization_service import localize_clones
 
 router = APIRouter()
 
@@ -101,13 +103,46 @@ async def upload_image(file: UploadFile = File(...)):
     )
 
     # =====================
+    # Copy-Move Detection
+    # =====================
+
+    copymove_output = (
+        UPLOAD_DIR /
+        f"copymove_{file.filename}"
+    )
+
+    copymove_result = detect_copymove(
+        str(file_path),
+        str(copymove_output)
+    )
+
+    # =====================
+    # Clone Localization
+    # =====================
+
+    bbox_output = (
+        UPLOAD_DIR /
+        f"bbox_{file.filename}"
+    )
+
+    bbox_result = localize_clones(
+        str(file_path),
+        str(bbox_output)
+    )
+
+    copymove_result.update(
+        bbox_result
+    )
+
+    # =====================
     # Risk Analysis
     # =====================
 
     analysis = calculate_risk(
         metadata,
         ela_result,
-        noise_result
+        noise_result,
+        copymove_result
     )
 
     # =====================
@@ -131,6 +166,7 @@ async def upload_image(file: UploadFile = File(...)):
         analysis,
         ela_result,
         noise_result,
+        copymove_result,
         str(file_path),
         ela_result["ela_path"],
         heatmap_path,
@@ -150,9 +186,11 @@ async def upload_image(file: UploadFile = File(...)):
 
         "analysis": analysis,
 
+        "explanation": explanation,
+
         "noise": noise_result,
 
-        "explanation": explanation,
+        "copymove": copymove_result,
 
         "ela": ela_result,
 

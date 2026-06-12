@@ -47,6 +47,18 @@ def get_history():
                 "authenticity_score":
                     item.authenticity_score,
 
+                "copymove_detected": item.copymove_detected,
+
+                "matched_regions": item.matched_regions,
+
+                "copymove_score": item.copymove_score,
+
+                "copymove_path": item.copymove_path,
+
+                "bbox_count": item.bbox_count,
+
+                "bbox_path": item.bbox_path,
+                
                 "mean_ela": item.mean_ela,
 
                 "std_ela": item.std_ela,

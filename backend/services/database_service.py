@@ -10,6 +10,7 @@ def save_analysis(
     analysis,
     ela,
     noise,
+    copymove,
     image_path,
     ela_path,
     heatmap_path,
@@ -86,6 +87,42 @@ def save_analysis(
 
             noise_level=noise.get(
                 "noise_level",
+                None
+            ),
+
+            # =====================
+            # Copy-Move Analysis
+            # =====================
+
+            copymove_detected=int(
+                copymove.get(
+                    "copymove_detected",
+                    False
+                )
+            ),
+
+            matched_regions=copymove.get(
+                "matched_regions",
+                0
+            ),
+
+            copymove_score=copymove.get(
+                "copymove_score",
+                0
+            ),
+
+            copymove_path=copymove.get(
+                "copymove_path",
+                None
+            ),
+
+            bbox_count=copymove.get(
+                "bbox_count",
+                0
+            ),
+
+            bbox_path=copymove.get(
+                "bbox_path",
                 None
             ),
 

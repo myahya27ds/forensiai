@@ -3,6 +3,8 @@ import pandas as pd
 import requests
 import matplotlib.pyplot as plt
 
+import json
+
 API_URL = "http://127.0.0.1:8000"
 
 st.set_page_config(
@@ -189,15 +191,23 @@ if not df.empty:
 
     columns_to_show = [
         col for col in [
+
             "id",
             "filename",
+
             "risk",
             "score",
+
             "authenticity_score",
-            "manipulation_probability",
+
             "mean_ela",
             "mean_noise",
-            "noise_level"
+            "noise_level",
+
+            "copymove_detected",
+            "matched_regions",
+            "copymove_score"
+
         ]
         if col in filtered_df.columns
     ]
@@ -240,8 +250,9 @@ if not df.empty:
     )
 
     if (
-        selected_row.get("image_path")
-        and selected_row.get("ela_path")
+        selected_row.get(
+            "explanation"
+        )
     ):
 
         st.info(
@@ -261,9 +272,21 @@ if not df.empty:
             "Investigation Findings"
         )
 
-        st.code(
-            selected_row["findings"]
-        )
+        try:
+
+            findings = json.loads(
+                selected_row["findings"]
+            )
+
+            for item in findings:
+
+                st.success(item)
+
+        except:
+
+            st.write(
+                selected_row["findings"]
+            )
 
     # ==================================
     # PDF REPORT
@@ -353,57 +376,72 @@ if not df.empty:
                     use_container_width=True
                 )
 
+    if (
+        "copymove_path" in selected_row
+        and pd.notnull(
+            selected_row["copymove_path"]
+        )
+    ):
+
+        st.image(
+            selected_row["copymove_path"],
+            caption="Copy-Move Detection",
+            use_container_width=True
+        )
+    
+    if (
+        "bbox_path" in selected_row
+        and pd.notnull(
+            selected_row["bbox_path"]
+        )
+    ):
+
+        st.image(
+            selected_row["bbox_path"],
+            caption="Clone Localization",
+            use_container_width=True
+        )
+
     st.divider()
 
     # ==================================
     # DETAIL METRICS
     # ==================================
 
-    auth_score = (
+    copymove_flag = str(
         selected_row.get(
-            "authenticity_score",
-            0
-        ) or 0
-    )
-
-    manip_score = (
-        selected_row.get(
-            "manipulation_probability",
-            0
-        ) or 0
-    )
-
-    c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
+            "copymove_detected",
+            "False"
+        )
+    ).lower() == "true"
+    
+    c1, c2, c3, c4, c5 = st.columns(5)
 
     c1.metric(
-        "Risk Score",
-        selected_row["score"]
+        "Copy-Move",
+        "YES" if copymove_flag else "NO"
     )
 
     c2.metric(
-        "Risk Level",
-        selected_row["risk"]
+        "Matched Regions",
+        selected_row.get(
+            "matched_regions",
+            0
+        )
     )
 
     c3.metric(
-        "Authenticity",
-        f"{round(auth_score * 100)}%"
-    )
-
-    c4.metric(
-        "Manipulation",
-        f"{round(manip_score * 100)}%"
-    )
-
-    c5.metric(
-        "Mean ELA",
+        "Copy-Move Score",
         round(
-            selected_row["mean_ela"],
+            selected_row.get(
+                "copymove_score",
+                0
+            ) or 0,
             2
         )
     )
 
-    c6.metric(
+    c4.metric(
         "Noise Level",
         selected_row.get(
             "noise_level",
@@ -411,14 +449,11 @@ if not df.empty:
         )
     )
 
-    c7.metric(
-        "Mean Noise",
-        round(
-            selected_row.get(
-                "mean_noise",
-                0
-            ),
-            2
+    c5.metric(
+        "Clone Regions",
+        selected_row.get(
+            "bbox_count",
+            0
         )
     )
 

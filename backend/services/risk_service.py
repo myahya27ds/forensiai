@@ -1,7 +1,8 @@
 def calculate_risk(
     metadata,
     ela_result,
-    noise_result
+    noise_result,
+    copymove_result
 ):
 
     score = 0
@@ -35,7 +36,10 @@ def calculate_risk(
     # ELA Mean
     # =====================
 
-    mean_ela = ela_result["mean_error"]
+    mean_ela = ela_result.get(
+        "mean_error",
+        0
+    )
 
     if mean_ela > 25:
 
@@ -53,7 +57,10 @@ def calculate_risk(
     # ELA Variance
     # =====================
 
-    std_ela = ela_result["std_error"]
+    std_ela = ela_result.get(
+        "std_error",
+        0
+    )
 
     if std_ela > 40:
 
@@ -71,7 +78,10 @@ def calculate_risk(
     # Noise Analysis
     # =====================
 
-    mean_noise = noise_result["mean_noise"]
+    mean_noise = noise_result.get(
+        "mean_noise",
+        0
+    )
 
     if mean_noise > 20:
 
@@ -85,7 +95,12 @@ def calculate_risk(
 
         score += 5
 
-    if noise_result["noise_level"] == "HIGH":
+    noise_level = noise_result.get(
+        "noise_level",
+        "LOW"
+    )
+
+    if noise_level == "HIGH":
 
         score += 20
 
@@ -93,15 +108,46 @@ def calculate_risk(
             "Abnormal noise pattern detected"
         )
 
-    elif noise_result["noise_level"] == "MEDIUM":
+    elif noise_level == "MEDIUM":
 
         score += 10
+
+    # =====================
+    # Copy-Move Analysis
+    # =====================
+
+    if copymove_result.get(
+        "copymove_detected",
+        False
+    ):
+
+        score += 25
+
+        findings.append(
+            "Copy-move forgery suspected"
+        )
+
+    if (
+        copymove_result.get(
+            "matched_regions",
+            0
+        ) > 20
+    ):
+
+        score += 15
+
+        findings.append(
+            "High duplicate region count"
+        )
 
     # =====================
     # Prevent Overflow
     # =====================
 
-    score = min(score, 100)
+    score = min(
+        score,
+        100
+    )
 
     # =====================
     # Risk Level
@@ -154,4 +200,5 @@ def calculate_risk(
             authenticity_score,
 
         "findings": findings
+
     }

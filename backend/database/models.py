@@ -61,6 +61,26 @@ class ImageAnalysis(Base):
     noise_level = Column(String)
 
     # =====================
+    # Copy-Move Analysis
+    # =====================
+
+    copymove_detected = Column(Integer)
+
+    matched_regions = Column(Integer)
+
+    copymove_score = Column(Float)
+
+    copymove_path = Column(String)
+
+    # =====================
+    # Clone Localization
+    # =====================
+
+    bbox_count = Column(Integer)
+
+    bbox_path = Column(String)
+
+    # =====================
     # AI Explanation
     # =====================
 
@@ -79,3 +99,5 @@ class ImageAnalysis(Base):
     heatmap_path = Column(String)
 
     overlay_path = Column(String)
+
+    
