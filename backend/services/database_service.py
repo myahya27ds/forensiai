@@ -115,6 +115,11 @@ def save_analysis(
                 "copymove_path",
                 None
             ),
+            
+            clusters=copymove.get(
+                "clusters",
+                0
+            ),
 
             bbox_count=copymove.get(
                 "bbox_count",

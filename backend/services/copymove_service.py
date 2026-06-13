@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import os
 
+from sklearn.cluster import DBSCAN
+
 
 def detect_copymove(
     image_path,
@@ -15,9 +17,18 @@ def detect_copymove(
         return {
 
             "copymove_detected": False,
+
             "matched_regions": 0,
+
             "copymove_score": 0,
-            "copymove_path": None
+
+            "copymove_path": None,
+
+            "bbox_count": 0,
+
+            "bbox_path": None,
+
+            "debug_matches": 0
 
         }
 
@@ -26,105 +37,256 @@ def detect_copymove(
         cv2.COLOR_BGR2GRAY
     )
 
-    # =====================
-    # ORB Feature Detection
-    # =====================
+    # ==================================
+    # SIFT
+    # ==================================
 
-    orb = cv2.ORB_create(
-        nfeatures=2000
+    sift = cv2.SIFT_create(
+        nfeatures=3000
     )
 
-    keypoints, descriptors = orb.detectAndCompute(
+    keypoints, descriptors = sift.detectAndCompute(
         gray,
         None
     )
 
-    if descriptors is None:
+    print(
+        "KEYPOINTS:",
+        len(keypoints)
+    )
+
+    if (
+        descriptors is None
+        or len(keypoints) < 10
+    ):
 
         return {
 
             "copymove_detected": False,
+
             "matched_regions": 0,
+
             "copymove_score": 0,
-            "copymove_path": None
+
+            "copymove_path": None,
+
+            "bbox_count": 0,
+
+            "bbox_path": None,
+
+            "debug_matches": 0
 
         }
 
-    # =====================
-    # Feature Matching
-    # =====================
+    # ==================================
+    # FLANN
+    # ==================================
 
-    matcher = cv2.BFMatcher(
-        cv2.NORM_HAMMING,
-        crossCheck=True
+    FLANN_INDEX_KDTREE = 1
+
+    index_params = {
+
+        "algorithm": FLANN_INDEX_KDTREE,
+
+        "trees": 5
+
+    }
+
+    search_params = {
+
+        "checks": 100
+
+    }
+
+    flann = cv2.FlannBasedMatcher(
+        index_params,
+        search_params
     )
 
-    matches = matcher.match(
+    matches = flann.knnMatch(
         descriptors,
-        descriptors
+        descriptors,
+        k=10
     )
 
-    suspicious_matches = []
+    good_matches = []
 
-    for match in matches:
+    points = []
 
-        if match.queryIdx == match.trainIdx:
-            continue
+    # ==================================
+    # Copy-Move Matching
+    # ==================================
 
-        pt1 = keypoints[
-            match.queryIdx
-        ].pt
+    for pair in matches:
 
-        pt2 = keypoints[
-            match.trainIdx
-        ].pt
+        for m in pair:
 
-        distance = np.linalg.norm(
-            np.array(pt1)
-            - np.array(pt2)
-        )
+            if m.queryIdx == m.trainIdx:
+                continue
 
-        if distance > 20:
-
-            suspicious_matches.append(
-                match
+            pt1 = np.array(
+                keypoints[m.queryIdx].pt
             )
 
+            pt2 = np.array(
+                keypoints[m.trainIdx].pt
+            )
+
+            spatial_distance = np.linalg.norm(
+                pt1 - pt2
+            )
+
+            # abaikan fitur yg terlalu dekat
+            if spatial_distance < 30:
+                continue
+
+            # descriptor similarity
+            if m.distance < 250:
+
+                good_matches.append(m)
+
+                points.append(pt1)
+
+                points.append(pt2)
+
     matched_regions = len(
-        suspicious_matches
+        good_matches
     )
 
-    # =====================
-    # Score Calculation
-    # =====================
-
-    copymove_score = min(
-        matched_regions / 50,
-        1.0
+    print(
+        "GOOD MATCHES:",
+        matched_regions
     )
 
-    copymove_detected = (
-        matched_regions > 10
+    # ==================================
+    # Debug Visualization
+    # ==================================
+
+    debug_path = output_path.replace(
+        ".jpg",
+        "_matches.jpg"
     )
 
-    # =====================
-    # Visualization
-    # =====================
+    if matched_regions > 0:
 
-    result = cv2.drawMatches(
+        debug_image = cv2.drawMatches(
 
-        image,
-        keypoints,
+            image,
+            keypoints,
 
-        image,
-        keypoints,
+            image,
+            keypoints,
 
-        suspicious_matches[:50],
+            good_matches[:100],
 
-        None,
+            None,
 
-        flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS
+            flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS
 
+        )
+
+        cv2.imwrite(
+            debug_path,
+            debug_image
+        )
+
+    # ==================================
+    # Early Exit
+    # ==================================
+
+    if len(points) < 6:
+
+        return {
+
+            "copymove_detected": False,
+
+            "matched_regions": matched_regions,
+
+            "copymove_score": 0,
+
+            "copymove_path": debug_path,
+
+            "bbox_count": 0,
+
+            "bbox_path": None,
+
+            "debug_matches": matched_regions
+
+        }
+
+    # ==================================
+    # DBSCAN
+    # ==================================
+
+    points = np.array(points)
+
+    print(
+        "POINTS:",
+        len(points)
+    )
+
+    clustering = DBSCAN(
+        eps=60,
+        min_samples=2
+    ).fit(points)
+
+    labels = clustering.labels_
+
+    result = image.copy()
+
+    cluster_count = 0
+
+    # ==================================
+    # Bounding Boxes
+    # ==================================
+
+    for label in set(labels):
+
+        if label == -1:
+            continue
+
+        cluster_points = points[
+            labels == label
+        ]
+
+        if len(cluster_points) < 3:
+            continue
+
+        cluster_count += 1
+
+        x_min = int(
+            cluster_points[:, 0].min()
+        )
+
+        y_min = int(
+            cluster_points[:, 1].min()
+        )
+
+        x_max = int(
+            cluster_points[:, 0].max()
+        )
+
+        y_max = int(
+            cluster_points[:, 1].max()
+        )
+
+        cv2.rectangle(
+
+            result,
+
+            (x_min, y_min),
+
+            (x_max, y_max),
+
+            (0, 0, 255),
+
+            3
+
+        )
+
+    print(
+        "CLUSTERS:",
+        cluster_count
     )
 
     os.makedirs(
@@ -135,6 +297,29 @@ def detect_copymove(
     cv2.imwrite(
         output_path,
         result
+    )
+
+    copymove_detected = (
+        cluster_count > 0
+    )
+
+    copymove_score = min(
+
+        (
+            matched_regions / 100
+        )
+        +
+        (
+            cluster_count / 10
+        ),
+
+        1.0
+
+    )
+
+    print(
+        "COPYMOVE:",
+        copymove_detected
     )
 
     return {
@@ -151,7 +336,16 @@ def detect_copymove(
                 2
             ),
 
+        "bbox_count":
+            cluster_count,
+
+        "bbox_path":
+            output_path,
+
         "copymove_path":
-            output_path
+            output_path,
+
+        "debug_matches":
+            matched_regions
 
     }

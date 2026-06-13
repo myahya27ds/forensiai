@@ -54,6 +54,8 @@ def get_history():
                 "copymove_score": item.copymove_score,
 
                 "copymove_path": item.copymove_path,
+                
+                "clusters": item.clusters,
 
                 "bbox_count": item.bbox_count,
 

@@ -206,7 +206,9 @@ if not df.empty:
 
             "copymove_detected",
             "matched_regions",
-            "copymove_score"
+            "copymove_score",
+
+            "clusters"
 
         ]
         if col in filtered_df.columns
@@ -414,7 +416,7 @@ if not df.empty:
             "False"
         )
     ).lower() == "true"
-    
+
     c1, c2, c3, c4, c5 = st.columns(5)
 
     c1.metric(
@@ -450,9 +452,9 @@ if not df.empty:
     )
 
     c5.metric(
-        "Clone Regions",
+        "Clusters",
         selected_row.get(
-            "bbox_count",
+            "clusters",
             0
         )
     )

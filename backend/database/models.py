@@ -72,6 +72,8 @@ class ImageAnalysis(Base):
 
     copymove_path = Column(String)
 
+    clusters = Column(Integer)
+
     # =====================
     # Clone Localization
     # =====================
